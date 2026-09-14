@@ -79,6 +79,7 @@ Foxy expressions have the following syntax:
   /string/flags    Matches the regular expression 'string' with flags
   .                Matches any character
   \n               Matches P(value) where value is the nth previous capture
+  `value`          Captures 'value' and consumes no input
   {}               Captures the current position and consumes no input
   { patt }         Captures the substring of the input matched by patt,
                    followed by all captures of patt
@@ -545,19 +546,19 @@ def Quoted(open, close=None):
 
 from ast import literal_eval
 
-def _string_eval(string):
-  return Literal(literal_eval(string))
-
 def _regex_eval(string, flags):
   expr = regex.sub(r'\\/', '/', string[1:-1])
   flags = reduce(lambda x, y: x | regex.RegexFlag[y.upper()], flags, 0)
   return Regex(expr, flags)
 
+def _const_eval(string):
+  return ConstantCapture(literal_eval(string[1:-1]))
+
 def _grammar_eval(*items):
   return Grammar({items[i]: items[i + 1] for i in range(0, len(items), 2)})
 
 _foxexp = Grammar({
-  'pattern': V('WS') + V('exp') + -1,
+  'pattern': V('WS') + V('exp') + P(-1),
   'exp': V('grammar') | V('one_of'),
   'one_of': V('sequence') + (V('OR') + V('sequence') << OneOf)**0,
   'sequence': V('prefix') + (V('prefix') << Sequence)**0,
@@ -572,9 +573,10 @@ _foxexp = Grammar({
           | V('CARET') + P('-') + Cc(0) + V('num')
           | V('CARET') + V('num') >> (0, 0),
   'primary': V('name') + -V('EQUALS') >> Variable
-          | V('string') >> _string_eval
+          | V('string') >> literal_eval >> Literal
           | V('class') >> Regex
           | V('regex') >> _regex_eval
+          | V('const') >> _const_eval
           | P('\\') + V('num') >> BackCapture
           | P('.') + V('WS') + Cc(Any())
           | P('{}') + V('WS') + Cc(Cp())
@@ -588,6 +590,7 @@ _foxexp = Grammar({
   'string': C(Quoted("'") | Quoted('"')) + V('WS'),
   'class': C(Quoted('\\[', '\\]')) + V('WS'),
   'regex': C(Quoted('/')) + C(R(r'(?i)[a-z]*')) + V('WS'),
+  'const': C(Quoted('`')) + V('WS'),
   'num': C(R(r'[+-]?\d+')) + V('WS') >> literal_eval,
   'WS': R(r'(?:\s+|#[^\n]*)*'),
   'OR': P('|') + V('WS'),
