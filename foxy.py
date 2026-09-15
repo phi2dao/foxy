@@ -100,6 +100,20 @@ from functools import reduce, wraps
 import regex
 regex.DEFAULT_VERSION = regex.V1
 
+##### Symbols #####
+
+__all__ = [
+  'Any', 'BackCapture', 'C', 'Capture', 'Cb', 'Cc', 'Cg', 'Cmt', 'Compound',
+  'ConstantCapture', 'Cp', 'Cs', 'FunctionCapture', 'Grammar', 'GrammarError',
+  'GroupCapture', 'Literal', 'MatchData', 'MatchState', 'MatchTimeCapture',
+  'NumberedCapture', 'OneOf', 'P', 'Pattern', 'PositionCapture', 'Predicate',
+  'Quoted', 'R', 'ReductionCapture', 'Regex', 'Repetition', 'ScopeCapture',
+  'Sequence', 'SimpleCapture', 'V', 'Variable', 'compile', 'findall', 'match',
+  'search'
+]
+
+__version__ = '1.0.0'
+
 ##### API #####
 
 def P(value):
