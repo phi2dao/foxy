@@ -46,6 +46,8 @@ later use. This module exports the following operations for capturing values:
   patt >> None     Discards all captures of patt
   patt >> n        Captures the nth capture of patt and discards the rest
   patt >> (n, ...) Captures the nth, etc. captures of patt and discards the rest
+  patt >> dict     Captures dict[key] where key is the first capture of patt.
+                   Produces no captures if key is not in dict
   patt >> func     Calls func with the captures of patt as its arguments and
                    captures the result(s)
   patt << func     Calls func with the last capture before patt and the
@@ -107,12 +109,12 @@ __all__ = [
   'ConstantCapture', 'Cp', 'Cs', 'FunctionCapture', 'Grammar', 'GrammarError',
   'GroupCapture', 'Literal', 'MatchData', 'MatchState', 'MatchTimeCapture',
   'NumberedCapture', 'OneOf', 'P', 'Pattern', 'PositionCapture', 'Predicate',
-  'Quoted', 'R', 'ReductionCapture', 'Regex', 'Repetition', 'ScopeCapture',
-  'Sequence', 'SimpleCapture', 'V', 'Variable', 'compile', 'findall', 'match',
-  'search'
+  'QueryCapture', 'Quoted', 'R', 'ReductionCapture', 'Regex', 'Repetition',
+  'ScopeCapture', 'Sequence', 'SimpleCapture', 'V', 'Variable', 'compile',
+  'findall', 'match', 'search'
 ]
 
-__version__ = '1.0.0'
+__version__ = '1.1.0'
 
 ##### API #####
 
@@ -200,6 +202,7 @@ class _DSL:
     match value:
       case None: return NumberedCapture(self, None)
       case int(x) | tuple(x): return NumberedCapture(self, x)
+      case dict(x): return QueryCapture(self, x)
       case x if callable(x): return FunctionCapture(self, x)
       case _: return NotImplemented
 
@@ -319,7 +322,7 @@ class Compound(Pattern):
   __slots__ = ('members', 'resolved')
 
   def __init__(self, *members):
-    self.members = members
+    self.members = tuple(map(P, members))
     self.resolved = False
 
   @property
@@ -513,6 +516,20 @@ class NumberedCapture(Capture):
       case None: return head
       case int(x): return (*head, rest[x])
       case tuple(x): return head + tuple(rest[n] for n in x)
+
+class QueryCapture(Capture):
+  __slots__ = ('lookup',)
+
+  def __init__(self, member, lookup):
+    super().__init__(member)
+    self.lookup = lookup
+
+  def _capture(self, match, head, rest):
+    key = rest[0] if rest else match
+    try:
+      return (*head, self.lookup[key])
+    except KeyError:
+      return head
 
 class FunctionCapture(Capture):
   __slots__ = ('func',)
