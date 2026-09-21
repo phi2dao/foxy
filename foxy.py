@@ -108,13 +108,13 @@ __all__ = [
   'Any', 'BackCapture', 'C', 'Capture', 'Cb', 'Cc', 'Cg', 'Cmt', 'Compound',
   'ConstantCapture', 'Cp', 'Cs', 'FunctionCapture', 'Grammar', 'GrammarError',
   'GroupCapture', 'Literal', 'MatchData', 'MatchState', 'MatchTimeCapture',
-  'NumberedCapture', 'OneOf', 'P', 'Pattern', 'PositionCapture', 'Predicate',
-  'QueryCapture', 'Quoted', 'R', 'ReductionCapture', 'Regex', 'Repetition',
-  'ScopeCapture', 'Sequence', 'SimpleCapture', 'V', 'Variable', 'compile',
-  'findall', 'match', 'search'
+  'NumberedCapture', 'OneOf', 'Options', 'P', 'Pattern', 'PositionCapture',
+  'Predicate', 'QueryCapture', 'Quoted', 'R', 'ReductionCapture', 'Regex',
+  'Repetition', 'ScopeCapture', 'Sequence', 'SimpleCapture', 'V', 'Variable',
+  'compile', 'findall', 'match', 'search'
 ]
 
-__version__ = '1.1.0'
+__version__ = '1.2.0'
 
 ##### API #####
 
@@ -568,6 +568,9 @@ class MatchTimeCapture(Compound):
 Cmt = MatchTimeCapture
 
 ### Convenience ###
+
+def Options(*options):
+  return OneOf(*sorted(options, key=len, reverse=True))
 
 def Quoted(open, close=None):
   close = close or open
