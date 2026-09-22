@@ -114,7 +114,7 @@ __all__ = [
   'compile', 'findall', 'match', 'search'
 ]
 
-__version__ = '1.2.0'
+__version__ = '1.3.0'
 
 ##### API #####
 
@@ -569,8 +569,11 @@ Cmt = MatchTimeCapture
 
 ### Convenience ###
 
-def Options(*options):
-  return OneOf(*sorted(options, key=len, reverse=True))
+def Options(*options, optiondict=None):
+  if options and optiondict:
+    raise ValueError('cannot specify both options and optiondict')
+  pattern = OneOf(*sorted(optiondict or options, key=len, reverse=True))
+  return pattern >> optiondict if optiondict else pattern
 
 def Quoted(open, close=None):
   close = close or open
