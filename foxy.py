@@ -47,7 +47,7 @@ later use. This module exports the following operations for capturing values:
   patt >> n        Captures the nth capture of patt and discards the rest
   patt >> (n, ...) Captures the nth, etc. captures of patt and discards the rest
   patt >> dict     Captures dict[key] where key is the first capture of patt.
-                   Produces no captures if key is not in dict
+                   Captures None if key is not in dict
   patt >> func     Calls func with the captures of patt as its arguments and
                    captures the result(s)
   patt << func     Calls func with the last capture before patt and the
@@ -62,7 +62,7 @@ Pattern objects have the following methods:
   findall          Find all matches of the Pattern object in a string
 
 Foxy expressions have the following syntax:
-  patt1 | patt2    Matches patt1 or patt2 in that order
+  patt1 | patt2    Matches patt1 or patt2, in that order
   patt1 patt2      Matches patt1 followed by patt2
   & patt           Matches patt and consumes no input
   ! patt           Fails if it would match patt and never consumes input
@@ -114,7 +114,7 @@ __all__ = [
   'compile', 'findall', 'match', 'search'
 ]
 
-__version__ = '1.3.0'
+__version__ = '1.4.0'
 
 ##### API #####
 
@@ -183,7 +183,7 @@ class _DSL:
 
   def __pow__(self, n):
     match n:
-      case tuple(int(x), int(y)): return Repetition(self, x, y)
+      case int(x), int(y): return Repetition(self, x, y)
       case int(x) if x >= 0: return Repetition(self, x, None)
       case int(x): return Repetition(self, 0, -x)
       case _: return NotImplemented
@@ -515,7 +515,7 @@ class NumberedCapture(Capture):
     match self.n:
       case None: return head
       case int(x): return (*head, rest[x])
-      case tuple(x): return head + tuple(rest[n] for n in x)
+      case tuple(x): return (*head, *(rest[n] for n in x))
 
 class QueryCapture(Capture):
   __slots__ = ('lookup',)
@@ -526,10 +526,7 @@ class QueryCapture(Capture):
 
   def _capture(self, match, head, rest):
     key = rest[0] if rest else match
-    try:
-      return (*head, self.lookup[key])
-    except KeyError:
-      return head
+    return (*head, self.lookup.get(key))
 
 class FunctionCapture(Capture):
   __slots__ = ('func',)
@@ -575,9 +572,9 @@ def Options(*options, optiondict=None):
   pattern = OneOf(*sorted(optiondict or options, key=len, reverse=True))
   return pattern >> optiondict if optiondict else pattern
 
-def Quoted(open, close=None):
-  close = close or open
-  return Regex(rf'{open}[^\\{close}]*(?:\\.[^\\{close}]*)*{close}')
+def Quoted(begin, end=None):
+  begin, end = regex.escape(begin), regex.escape(end or begin)
+  return Regex(rf'{begin}[^\\{end}]*(?:\\.[^\\{end}]*)*{end}')
 
 ##### FoxyExpressions #####
 
@@ -625,7 +622,7 @@ _foxexp = Grammar({
   'definition': V('name') + V('EQUALS') + V('exp'),
   'name': C(R(r'[\w--\d]\w*')) + V('WS'),
   'string': C(Quoted("'") | Quoted('"')) + V('WS'),
-  'class': C(Quoted('\\[', '\\]')) + V('WS'),
+  'class': C(Quoted('[', ']')) + V('WS'),
   'regex': C(Quoted('/')) + C(R(r'(?i)[a-z]*')) + V('WS'),
   'const': C(Quoted('`')) + V('WS'),
   'num': C(R(r'[+-]?\d+')) + V('WS') >> literal_eval,
